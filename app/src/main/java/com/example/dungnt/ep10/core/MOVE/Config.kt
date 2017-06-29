@@ -20,6 +20,7 @@ enum class HTTP_ERROR{
 fun Engine.loadConfigComponent(){
     addComponent(OperationManager())
     addComponent(HttpComponent())
+    addComponent(TcpComponent())
 
 }
 

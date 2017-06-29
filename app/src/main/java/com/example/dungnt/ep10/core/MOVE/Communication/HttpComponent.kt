@@ -44,7 +44,7 @@ class HttpComponent : BaseComponent {
     }
 
     override fun start() {
-        println("did start ${this.javaClass.name}")
+        println("did start ${this}")
     }
 
     override fun reset() {
