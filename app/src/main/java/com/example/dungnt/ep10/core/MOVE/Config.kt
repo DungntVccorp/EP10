@@ -1,7 +1,7 @@
 package com.example.dungnt.ep10.core.MOVE
 
-import com.example.dungnt.ep10.core.MOVE.Connection.HttpComponent
-import com.example.dungnt.ep10.core.MOVE.Connection.TcpComponent
+import com.example.dungnt.ep10.core.MOVE.Communication.HttpComponent
+import com.example.dungnt.ep10.core.MOVE.Communication.TcpComponent
 import com.example.dungnt.ep10.core.MOVE.Operation.OperationManager
 
 /**

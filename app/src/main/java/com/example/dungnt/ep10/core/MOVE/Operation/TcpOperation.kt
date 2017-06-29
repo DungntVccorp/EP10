@@ -8,7 +8,6 @@ import java.io.InputStream
 abstract class TcpOperation() : BaseOperation(){
 
     var replyData : InputStream? = null
-    val tcpId : Int = 0
     var ex : Exception? = null
 
     abstract fun buildRequest() : InputStream?
@@ -18,6 +17,8 @@ abstract class TcpOperation() : BaseOperation(){
         if (replyData == null){
             var data = this.buildRequest()
             if(data != null){
+
+            }else{
 
             }
         }else{

@@ -1,9 +1,11 @@
-package com.example.dungnt.ep10.core.MOVE.Connection
+package com.example.dungnt.ep10.core.MOVE.Communication
 
 import com.example.dungnt.ep10.core.MOVE.Component.BaseComponent
 import com.example.dungnt.ep10.core.MOVE.Component.ComponentType
+import com.example.dungnt.ep10.core.MOVE.Exception.BaseException
 import com.example.dungnt.ep10.core.MOVE.Exception.HttpException
 import com.example.dungnt.ep10.core.MOVE.HTTP_ERROR
+import com.example.dungnt.ep10.core.MOVE.Operation.BaseOperation
 import com.example.dungnt.ep10.core.MOVE.Operation.HttpOperation
 import com.example.dungnt.ep10.core.MOVE.loadConfigHttp
 import okhttp3.*
@@ -16,13 +18,13 @@ import java.util.concurrent.TimeUnit
  */
 class HttpComponent : BaseComponent {
 
+    data class mCall(val className : String,var onSuccess : ((param : Any) -> Unit)?,var onFailure : ((error : BaseException) -> Unit)?)
 
-    private var callList = Collections.synchronizedMap(LinkedHashMap<Call, String>())
-
+    private var callList = Collections.synchronizedMap(LinkedHashMap<Call, mCall>())
 
     private var client : OkHttpClient? = null
     var baseUrl : String? = null
-    var boundary : String = "--WebKitFormBoundary${String.format("%08x%08x",Random().nextInt(),Random().nextInt())}"
+
 
 
 
@@ -33,12 +35,11 @@ class HttpComponent : BaseComponent {
     override fun loadConfig() {
         this.loadConfigHttp()
 
-        println(boundary)
 
         this.client = OkHttpClient.Builder()
-                .connectTimeout(30,TimeUnit.SECONDS)
-                .readTimeout(30,TimeUnit.SECONDS)
-                .writeTimeout(30,TimeUnit.SECONDS)
+                .connectTimeout(5,TimeUnit.SECONDS)
+                .readTimeout(5,TimeUnit.SECONDS)
+                .writeTimeout(5,TimeUnit.SECONDS)
                 .build()
     }
 
@@ -54,29 +55,31 @@ class HttpComponent : BaseComponent {
     }
 
 
-    fun sendMessage(reg : Request,className : String){
-        if(this.client == null || this.baseUrl == null){
-            val cb = Class.forName(className).newInstance()
+    fun sendMessage(operation : HttpOperation){
+        if(this.client == null || this.baseUrl == null || operation.request == null){
+            val cb = Class.forName(operation.getClassName()).newInstance()
             if(cb is HttpOperation){
                 cb.er = HttpException("Lỗi khởi tạo hoặc url bị bỏ trống",HTTP_ERROR.CONFIG_FAILURE)
+                cb.onFailure = operation.onFailure
                 cb.enqueue()
             }
 
         }else{
 
-            val call = this.client?.newCall(reg)
-
+            val call = this.client?.newCall(operation.request)
             if(call != null){
-                this.callList.put(call,className)
+
+                this.callList.put(call,mCall(operation.getClassName(),operation.onSuccess,operation.onFailure))
+
                 call.enqueue(object : Callback{
                     override fun onFailure(call: Call?, e: IOException?) {
 
-                        println("onFailure")
                         var cName = callList.remove(call)
                         if(cName != null){
-                            val cb = Class.forName(cName).javaClass.newInstance()
+                            val cb = Class.forName(cName.className).newInstance()
                             if(cb is HttpOperation){
                                 cb.er = HttpException(e.toString(),HTTP_ERROR.NONE)
+                                cb.onFailure = cName.onFailure
                                 cb.enqueue()
                             }
                         }
@@ -85,18 +88,20 @@ class HttpComponent : BaseComponent {
 
                         var cName = callList.remove(call)
                         if(cName != null){
-                            val cb = Class.forName(cName).newInstance()
+                            val cb = Class.forName(cName.className).newInstance()
                             if(cb is HttpOperation){
                                 cb.replyData = response?.body()?.bytes()
+                                cb.onSuccess = cName.onSuccess
                                 cb.enqueue()
                             }
                         }
                     }
                 })
             }else{
-                val cb = Class.forName(className).newInstance()
+                val cb = Class.forName(operation.getClassName()).newInstance()
                 if(cb is HttpOperation){
                     cb.er = HttpException("Lỗi khởi tạo hoặc url bị bỏ trống",HTTP_ERROR.REQUEST_BUILD_FAILURE)
+                    cb.onFailure = operation.onFailure
                     cb.enqueue()
                 }
             }
