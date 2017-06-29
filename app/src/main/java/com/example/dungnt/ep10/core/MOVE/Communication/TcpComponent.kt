@@ -2,10 +2,14 @@ package com.example.dungnt.ep10.core.MOVE.Communication
 
 import android.content.Context
 import android.os.Bundle
+import com.example.dungnt.ep10.VietTalk.Operation.Profile.LoginOperation
+import com.example.dungnt.ep10.VietTalk.Operation.Profile.PingOperation
 import com.example.dungnt.ep10.core.MOVE.Component.BaseComponent
 import com.example.dungnt.ep10.core.MOVE.Component.ComponentType
+import com.example.dungnt.ep10.core.MOVE.Message.CoreMessage
 import com.example.dungnt.ep10.core.MOVE.Operation.TcpOperation
 import com.example.dungnt.ep10.core.MOVE.loadConfigTcp
+import com.google.protobuf.ByteString
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.net.InetAddress
@@ -26,6 +30,10 @@ class TcpComponent : BaseComponent , TcpConnectionDelegate{
     var hostName : String? = ""
 
     var hostPort : Int = 0
+
+    var sid      : ByteString? = null
+
+    var uid      : ByteString? = null
 
     var client : TcpConnection? = null
 
@@ -65,13 +73,16 @@ class TcpComponent : BaseComponent , TcpConnectionDelegate{
             client = TcpConnection(this.hostName,this.hostPort,this)
             client?.start()
 
-            client?.newCall(byteArrayOf(238.toByte()))
+
 
         }
     }
 
-    fun sendMessage(operation : TcpOperation) {
-
+    fun sendMessage(operation : TcpOperation,msg : CoreMessage) {
+        var msg = msg.encryptMessage()
+        if (msg != null) {
+            this.client?.newCall(msg!!)
+        }
     }
 
     override fun socketDidDisconect(error: Exception) {
@@ -81,12 +92,17 @@ class TcpComponent : BaseComponent , TcpConnectionDelegate{
     override fun socketDidReadPackage() {
 
     }
+
+    override fun socketDidConected() {
+        LoginOperation().enqueue()
+    }
 }
 
 
 interface TcpConnectionDelegate {
     fun socketDidDisconect(error : Exception)
     fun socketDidReadPackage()
+    fun socketDidConected()
 
 }
 
@@ -103,7 +119,6 @@ class TcpConnection(val hostName : String?, var hostPort : Int, var delegate : T
 
     var isConnected : Boolean = false
 
-    private var currentThread : Thread? = null
 
 
     override fun run() {
@@ -131,7 +146,12 @@ class TcpConnection(val hostName : String?, var hostPort : Int, var delegate : T
             }
 
 
+            if(delegate != null){
+                this.delegate?.socketDidConected()
+            }
 
+
+            PingOperation().enqueue()
 
             while (isConnected){
                 if (inputStream?.read() != -1){
@@ -144,7 +164,7 @@ class TcpConnection(val hostName : String?, var hostPort : Int, var delegate : T
                     this.delegate?.socketDidDisconect(Exception("Error Package connect"))
                 }
 
-                Thread.sleep(10)
+                //Thread.sleep(10)
             }
 
         }catch (e : Exception){

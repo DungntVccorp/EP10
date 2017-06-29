@@ -18,13 +18,16 @@ abstract class TcpOperation() : BaseOperation(){
     abstract fun onReplyRequest()
     abstract fun apiId() : Int
     override protected fun fire() {
+
+        println("TCP FIRE ${Thread.currentThread().name} ${this.toString()} ")
+
         if (replyData == null){
             var data = this.buildRequest()
             if(data != null){
                 val coreMessage = CoreMessage(this.apiId(), 1, data)
                 var tcp = Engine.instance.getComponent(ComponentType.TCP)
                 if(tcp is TcpComponent){
-                    tcp
+                    tcp.sendMessage(this,coreMessage)
                 }
             }else{
 

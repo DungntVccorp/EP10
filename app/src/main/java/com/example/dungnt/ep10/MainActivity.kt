@@ -14,6 +14,11 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Engine.instance.start()
+
+
+        println(Byte.MAX_VALUE)
+        println(Byte.MIN_VALUE)
+
         setContentView(R.layout.activity_main)
     }
 
@@ -32,6 +37,8 @@ class MainActivity : AppCompatActivity() {
                     if(tcp is TcpComponent){
                         tcp.hostName = param.host
                         tcp.hostPort = param.port
+                        tcp.sid      = param.sessionId
+                        tcp.uid      = param.userId
                         tcp.Connect()
                     }
 

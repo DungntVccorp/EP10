@@ -36,36 +36,38 @@ class CoreMessage{
         this.msg_size += this.msg_payload!!.count()
 
 
+        val b:Byte = 0xEE.toByte()
 
-        var data = byteArrayOf(238.toByte(),238.toByte())
-        data.plus(((msg_size shr 16) and 0xFF).toByte())
-        data.plus(((msg_size shr 8) and 0xFF).toByte())
-        data.plus((msg_size and 0xFF).toByte())
+        var data = byteArrayOf(b,b)
+        println(data[0].toInt())
+        data = data.plus(((msg_size shr 16) and 0xFF).toByte())
+        data = data.plus(((msg_size shr 8) and 0xFF).toByte())
+        data = data.plus((msg_size and 0xFF).toByte())
 
-        data.plus(((msg_type shr 8) and 0xFF).toByte())
-        data.plus((msg_type and 0xFF).toByte())
+        data = data.plus(((msg_type shr 8) and 0xFF).toByte())
+        data = data.plus((msg_type and 0xFF).toByte())
         if (this.msg_rID > 0){
             // CO' ID /// ADD ID
-            data.plus(2.toByte())
+            data = data.plus(2.toByte())
 
             // 2byte custom id for client
-            data.plus(((msg_type shr 8) and 0xFF).toByte())
-            data.plus((msg_type and 0xFF).toByte())
+            data = data.plus(((msg_type shr 8) and 0xFF).toByte())
+            data = data.plus((msg_type and 0xFF).toByte())
             // 6 byte msg ID
-            data.plus(((msg_rID shr 40) and 0xFF).toByte())
-            data.plus(((msg_rID shr 32) and 0xFF).toByte())
-            data.plus(((msg_rID shr 24) and 0xFF).toByte())
-            data.plus(((msg_rID shr 16) and 0xFF).toByte())
-            data.plus(((msg_rID shr 8) and 0xFF).toByte())
-            data.plus((msg_rID and 0xFF).toByte())
+            data = data.plus(((msg_rID shr 40) and 0xFF).toByte())
+            data = data.plus(((msg_rID shr 32) and 0xFF).toByte())
+            data = data.plus(((msg_rID shr 24) and 0xFF).toByte())
+            data = data.plus(((msg_rID shr 16) and 0xFF).toByte())
+            data = data.plus(((msg_rID shr 8) and 0xFF).toByte())
+            data = data.plus((msg_rID and 0xFF).toByte())
 
         }else{
             // KHONG CO ID
-            data.plus(0.toByte())
+            data = data.plus(0.toByte())
         }
 
         /// ADD RAW PAYLOAD
-        data.plus(this.msg_payload!!)
+        data = data.plus(this.msg_payload!!)
 
         return data
     }
