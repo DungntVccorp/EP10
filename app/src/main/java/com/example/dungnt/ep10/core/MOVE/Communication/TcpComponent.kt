@@ -35,7 +35,7 @@ class TcpComponent : BaseComponent, TcpConnectionDelegate {
 
     var client: TcpConnection? = null
 
-    private var listReceiveOperation = java.util.Collections.synchronizedList(ArrayList<String>())
+    private var listReceiveOperation =java.util.Collections.synchronizedMap(HashMap<Int, String>())
     private var listSendingOperation = java.util.Collections.synchronizedMap(HashMap<Int, String>())
 
     override fun priority(): Int {
@@ -59,8 +59,8 @@ class TcpComponent : BaseComponent, TcpConnectionDelegate {
         return ComponentType.TCP
     }
 
-    fun addReceiveOperation(receiveName: String) {
-        this.listReceiveOperation.add(receiveName)
+    fun addReceiveOperation(receiveName: String,receiveId : Int) {
+        this.listReceiveOperation[receiveId] = receiveName
     }
 
 
@@ -90,6 +90,9 @@ class TcpComponent : BaseComponent, TcpConnectionDelegate {
     override fun socketDidReceiveMessage(msg: CoreMessage) {
         println(msg.msg_type)
         var opName = this.listSendingOperation.remove(msg.msg_type)
+        if (opName == null){
+            opName = this.listReceiveOperation.remove(msg.msg_type)
+        }
         if (opName != null) {
             val cb = Class.forName(opName).newInstance()
             if (cb is TcpOperation) {
@@ -97,6 +100,7 @@ class TcpComponent : BaseComponent, TcpConnectionDelegate {
                 cb.enqueue()
             }
         }
+
     }
 
     override fun socketDidConected() {
@@ -145,10 +149,6 @@ class TcpConnection(val hostName: String?, var hostPort: Int, var delegate: TcpC
 
             inputStream = DataInputStream(socket?.getInputStream())
 
-
-
-
-
             outputStream = DataOutputStream(socket?.getOutputStream())
 
             if (inputStream != null && outputStream != null) {
@@ -168,8 +168,6 @@ class TcpConnection(val hostName: String?, var hostPort: Int, var delegate: TcpC
                     length = inputStream!!.read(b)
 
 
-                    println("READ ----> " + length)
-
                     if (buffer == null) {
                         buffer = b.copyOfRange(0, length)
                     } else {
@@ -181,7 +179,7 @@ class TcpConnection(val hostName: String?, var hostPort: Int, var delegate: TcpC
 
                         if (decryptMessage != null) {
                             if (decryptMessage.msg_size < buffer.count()) {
-                                /// Bị dư data println("Bi Du data")
+                                /// Bị dư data
                                 buffer = buffer!!.copyOfRange(decryptMessage.msg_size, length)
                             } else {
                                 /// done

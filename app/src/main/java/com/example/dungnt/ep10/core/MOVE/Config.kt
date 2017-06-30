@@ -25,9 +25,7 @@ fun Engine.loadConfigComponent(){
 }
 
 fun TcpComponent.loadConfigTcp(){
-    this.addReceiveOperation("com.example.dungnt.ep10.core.MOVE.Operation.HttpOperation")
-    this.addReceiveOperation("com.example.dungnt.ep10.core.MOVE.Operation.TcpOperation")
-
+    this.addReceiveOperation("com.example.dungnt.ep10.VietTalk.Operation.Profile.ReceiveSipAccountOperation",comm.CommProvision.ReceiveSipAccount.RECEIVE_SIP_ACCOUNT_FIELD_NUMBER)
 }
 
 fun HttpComponent.loadConfigHttp(){
