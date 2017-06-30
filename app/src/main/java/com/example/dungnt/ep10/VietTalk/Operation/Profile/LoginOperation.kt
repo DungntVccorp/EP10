@@ -15,16 +15,14 @@ class LoginOperation : TcpOperation() {
         if(tcp is TcpComponent){
             return CommProfile.Login.Request.newBuilder().setSessionId(tcp.sid).setUserId(tcp.uid).build().toByteArray()
         }
-
-
         return CommProfile.Login.Request.newBuilder().build().toByteArray()
     }
 
     override fun onReplyRequest() {
 
     }
-
     override fun apiId(): Int {
         return CommProfile.Login.ID_FIELD_NUMBER
     }
+
 }
