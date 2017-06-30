@@ -4,6 +4,8 @@ import com.example.dungnt.ep10.core.MOVE.Communication.TcpComponent
 import com.example.dungnt.ep10.core.MOVE.Component.ComponentType
 import com.example.dungnt.ep10.core.MOVE.Engine
 import com.example.dungnt.ep10.core.MOVE.Operation.TcpOperation
+import com.google.protobuf.ExtensionRegistryLite
+import comm.CommModel
 import comm.CommProfile
 
 /**
@@ -19,6 +21,17 @@ class LoginOperation : TcpOperation() {
     }
 
     override fun onReplyRequest() {
+        if (this.replyData != null){
+            ExtensionRegistryLite.newInstance().unmodifiable
+            val extension = ExtensionRegistryLite.newInstance()
+            extension.add(CommProfile.Login.iD)
+            val rep = CommModel.Reply.parseFrom(this.replyData!!,extension)
+            var rep2 = rep.getExtension(CommProfile.Login.iD)
+            if(rep2 is CommProfile.Login.Reply) {
+                println(rep2)
+            }
+        }
+
 
     }
     override fun apiId(): Int {

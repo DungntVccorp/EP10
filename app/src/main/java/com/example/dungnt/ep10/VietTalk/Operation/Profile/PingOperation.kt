@@ -14,6 +14,7 @@ class PingOperation : TcpOperation(){
     }
 
     override fun onReplyRequest() {
+        println("PONG")
     }
 
     override fun apiId(): Int {

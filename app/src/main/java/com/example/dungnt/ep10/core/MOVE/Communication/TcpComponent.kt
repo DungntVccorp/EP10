@@ -10,6 +10,8 @@ import com.example.dungnt.ep10.core.MOVE.Message.CoreMessage
 import com.example.dungnt.ep10.core.MOVE.Operation.TcpOperation
 import com.example.dungnt.ep10.core.MOVE.loadConfigTcp
 import com.google.protobuf.ByteString
+import java.io.BufferedReader
+import java.io.ByteArrayInputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.net.InetAddress
@@ -21,23 +23,20 @@ import java.net.Socket
  */
 
 
+class TcpComponent : BaseComponent, TcpConnectionDelegate {
 
+    var hostName: String? = ""
 
+    var hostPort: Int = 0
 
+    var sid: ByteString? = null
 
-class TcpComponent : BaseComponent , TcpConnectionDelegate{
+    var uid: ByteString? = null
 
-    var hostName : String? = ""
-
-    var hostPort : Int = 0
-
-    var sid      : ByteString? = null
-
-    var uid      : ByteString? = null
-
-    var client : TcpConnection? = null
+    var client: TcpConnection? = null
 
     private var listReceiveOperation = java.util.Collections.synchronizedList(ArrayList<String>())
+    private var listSendingOperation = java.util.Collections.synchronizedMap(HashMap<Int, String>())
 
     override fun priority(): Int {
         return 1
@@ -60,28 +59,27 @@ class TcpComponent : BaseComponent , TcpConnectionDelegate{
         return ComponentType.TCP
     }
 
-    fun addReceiveOperation(receiveName : String){
+    fun addReceiveOperation(receiveName: String) {
         this.listReceiveOperation.add(receiveName)
     }
 
 
-
-    fun Connect(){
-        if(this.hostName == null || this.hostPort == null){
+    fun Connect() {
+        if (this.hostName == null || this.hostPort == null) {
             println("Config Failure")
-        }else{
-            client = TcpConnection(this.hostName,this.hostPort,this)
+        } else {
+            client = TcpConnection(this.hostName, this.hostPort, this)
             client?.start()
-
 
 
         }
     }
 
-    fun sendMessage(operation : TcpOperation,msg : CoreMessage) {
-        var msg = msg.encryptMessage()
-        if (msg != null) {
-            this.client?.newCall(msg!!)
+    fun sendMessage(operation: TcpOperation, msg: CoreMessage) {
+        var msgData = msg.encryptMessage()
+        if (msgData != null) {
+            listSendingOperation[operation.apiId()] = operation.getClassName()
+            this.client?.newCall(msgData!!)
         }
     }
 
@@ -89,36 +87,44 @@ class TcpComponent : BaseComponent , TcpConnectionDelegate{
 
     }
 
-    override fun socketDidReadPackage() {
-
+    override fun socketDidReceiveMessage(msg: CoreMessage) {
+        println(msg.msg_type)
+        var opName = this.listSendingOperation.remove(msg.msg_type)
+        if (opName != null) {
+            val cb = Class.forName(opName).newInstance()
+            if (cb is TcpOperation) {
+                cb.replyData = msg.msg_payload
+                cb.enqueue()
+            }
+        }
     }
 
     override fun socketDidConected() {
         LoginOperation().enqueue()
+        PingOperation().enqueue()
     }
 }
 
 
 interface TcpConnectionDelegate {
-    fun socketDidDisconect(error : Exception)
-    fun socketDidReadPackage()
+    fun socketDidDisconect(error: Exception)
+    fun socketDidReceiveMessage(msg: CoreMessage)
     fun socketDidConected()
 
 }
 
 
-class TcpConnection(val hostName : String?, var hostPort : Int, var delegate : TcpConnectionDelegate?) : Thread() {
+class TcpConnection(val hostName: String?, var hostPort: Int, var delegate: TcpConnectionDelegate?) : Thread() {
 
-    private var socket : Socket? = null
+    private var socket: Socket? = null
 
-    private var address : InetSocketAddress? = null
+    private var address: InetSocketAddress? = null
 
-    private var inputStream : DataInputStream? = null
+    private var inputStream: DataInputStream? = null
 
-    private var outputStream : DataOutputStream? = null
+    private var outputStream: DataOutputStream? = null
 
-    var isConnected : Boolean = false
-
+    var isConnected: Boolean = false
 
 
     override fun run() {
@@ -128,7 +134,7 @@ class TcpConnection(val hostName : String?, var hostPort : Int, var delegate : T
 
             val inetbyName = InetAddress.getByName(this.hostName)
 
-            address = InetSocketAddress(inetbyName,this.hostPort)
+            address = InetSocketAddress(inetbyName, this.hostPort)
 
             socket = Socket()
 
@@ -139,35 +145,62 @@ class TcpConnection(val hostName : String?, var hostPort : Int, var delegate : T
 
             inputStream = DataInputStream(socket?.getInputStream())
 
+
+
+
+
             outputStream = DataOutputStream(socket?.getOutputStream())
 
-            if(inputStream != null && outputStream != null){
+            if (inputStream != null && outputStream != null) {
                 isConnected = true
             }
 
-
-            if(delegate != null){
+            if (delegate != null) {
                 this.delegate?.socketDidConected()
             }
+            var buffer: ByteArray? = null
+
+            while (isConnected) {
+                if (inputStream!!.available() > 0) {
+                    var b: ByteArray = ByteArray(DEFAULT_BUFFER_SIZE)
+                    var length: Int = 0
+
+                    length = inputStream!!.read(b)
 
 
-            PingOperation().enqueue()
+                    println("READ ----> " + length)
 
-            while (isConnected){
-                if (inputStream?.read() != -1){
-                    // read package data form server
-                    val data = inputStream?.readBytes(DEFAULT_BUFFER_SIZE)
-                    println("Data size " + data?.count())
+                    if (buffer == null) {
+                        buffer = b.copyOfRange(0, length)
+                    } else {
+                        buffer.plus(b.copyOfRange(0, length))
+                    }
+                    var parse: Boolean = true
+                    while (parse) {
+                        var decryptMessage = CoreMessage.decryptMessage(buffer!!)
 
-                }else{
-                    isConnected = false // disconect
-                    this.delegate?.socketDidDisconect(Exception("Error Package connect"))
+                        if (decryptMessage != null) {
+                            if (decryptMessage.msg_size < buffer.count()) {
+                                /// Bị dư data println("Bi Du data")
+                                buffer = buffer!!.copyOfRange(decryptMessage.msg_size, length)
+                            } else {
+                                /// done
+                                parse = false
+                                buffer = null
+                            }
+                            if (delegate != null) {
+                                this.delegate?.socketDidReceiveMessage(decryptMessage!!)
+                            }
+                        } else {
+                            /// bi thieu data
+                            parse = false
+                        }
+                    }
+
                 }
-
-                //Thread.sleep(10)
+                sleep(10)
             }
-
-        }catch (e : Exception){
+        } catch (e: Exception) {
             println(e.toString())
             this.isConnected = false
             this.delegate?.socketDidDisconect(e)
@@ -182,14 +215,15 @@ class TcpConnection(val hostName : String?, var hostPort : Int, var delegate : T
     }
 
 
-    fun tcpStop(){
-
-    }
-    fun tcpReconect(){
+    fun tcpStop() {
 
     }
 
-    fun newCall(data : ByteArray){
+    fun tcpReconect() {
+
+    }
+
+    fun newCall(data: ByteArray) {
         this.outputStream?.write(data)
     }
 
