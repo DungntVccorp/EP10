@@ -7,8 +7,6 @@ package com.example.dungnt.ep10.core.MOVE.Component
 public enum class ComponentType{
     HTTP,
     TCP,
-    DATABASE,
-    SESSION,
     OPERATION,
     EVENT,
     LOG,

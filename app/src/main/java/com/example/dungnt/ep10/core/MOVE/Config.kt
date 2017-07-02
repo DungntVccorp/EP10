@@ -18,9 +18,9 @@ enum class HTTP_ERROR{
 
 
 fun Engine.loadConfigComponent(){
-    addComponent(OperationManager())
-    addComponent(HttpComponent())
-    addComponent(TcpComponent())
+    this.addComponent(OperationManager())
+    this.addComponent(HttpComponent())
+    this.addComponent(TcpComponent())
 
 }
 

@@ -48,10 +48,11 @@ class CoreMessage {
 
         var data = byteArrayOf(b, b)
         println(data[0].toInt())
+        // ADD SIZE
         data = data.plus(((msg_size shr 16) and 0xFF).toByte())
         data = data.plus(((msg_size shr 8) and 0xFF).toByte())
         data = data.plus((msg_size and 0xFF).toByte())
-
+        //ADD TYPE
         data = data.plus(((msg_type shr 8) and 0xFF).toByte())
         data = data.plus((msg_type and 0xFF).toByte())
         if (this.msg_rID!! > 0) {
