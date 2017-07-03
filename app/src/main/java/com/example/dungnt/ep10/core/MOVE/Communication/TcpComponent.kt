@@ -1,7 +1,6 @@
 package com.example.dungnt.ep10.core.MOVE.Communication
 
-import android.content.Context
-import android.os.Bundle
+
 import com.example.dungnt.ep10.VietTalk.Operation.Profile.LoginOperation
 import com.example.dungnt.ep10.VietTalk.Operation.Profile.PingOperation
 import com.example.dungnt.ep10.core.MOVE.Component.BaseComponent
@@ -10,8 +9,6 @@ import com.example.dungnt.ep10.core.MOVE.Message.CoreMessage
 import com.example.dungnt.ep10.core.MOVE.Operation.TcpOperation
 import com.example.dungnt.ep10.core.MOVE.loadConfigTcp
 import com.google.protobuf.ByteString
-import java.io.BufferedReader
-import java.io.ByteArrayInputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.net.InetAddress
