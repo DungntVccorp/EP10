@@ -108,7 +108,7 @@ class CoreMessage {
 
                         /// READ CUSTOM ID
                         var cutomId = rawData[index++].toInt() and 0xFF
-                        cutomId = (type shl 8) + (rawData[index++].toInt() and 0xFF)
+                        cutomId = (cutomId shl 8) + (rawData[index++].toInt() and 0xFF)
 
 
                         /// READ ID
